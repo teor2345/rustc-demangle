@@ -401,9 +401,6 @@ fn basic_type(tag: u8) -> Option<&'static str> {
 struct Disambiguator(u64);
 
 impl Disambiguator {
-    /// The zero-fill required for a minimum-length disambiguator ("0" to "f").
-    const MAX_HEX_FILL: &str = "000000000000000";
-
     /// Creates a new disambiguator from a u64.
     fn new(disambiguator: u64) -> Self {
         Self(disambiguator)
@@ -411,13 +408,8 @@ impl Disambiguator {
 
     /// Formats a fixed-length 16 character hex representation of the disambiguator.
     fn fmt_hex(&self, out: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // Handle the edge case of a zero disambiguator, where the bit width is zero, but the
-        // format is "0" (not the empty string).
-        // This code is about 4% faster than `write!(out, "{:016x}", self.0)`.
-        let hex_len = self.0.bit_width().div_ceil(4).max(1);
-        let fill_len = 16 - (hex_len as usize);
-        out.write_str(&Self::MAX_HEX_FILL[0..fill_len])?;
-        fmt::LowerHex::fmt(&self.0, out)
+        // `write!(out, "{:016x}", self.0)`, but expanded.
+        out.write_fmt(core::format_args!("{:016x}", self.0))
     }
 
     /// Formats a variable-length decimal representation of the disambiguator.
