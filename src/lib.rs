@@ -26,6 +26,7 @@
 #![no_std]
 #![deny(missing_docs)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
+#![feature(test)]
 
 #[cfg(any(test, feature = "std"))]
 #[macro_use]

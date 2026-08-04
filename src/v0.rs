@@ -1687,4 +1687,43 @@ mod tests {
             "<splat_mangling[d580343ed36ed69b]::main::Type<alloc[04462ec5c505d9a3]::boxed::Box<fn(u32, (fn(()), i8), f64)>>>"
         );
     }
+
+    extern crate test;
+    use self::test::{black_box, Bencher};
+
+    #[bench]
+    fn bench_demangle_crate_with_zero_disambiguator(b: &mut Bencher) {
+        b.iter(|| {
+            t!(black_box("_RC4f128"), "f128");
+            t_nohash!(black_box("_RC4f128"), "f128");
+        });
+    }
+
+    #[bench]
+    fn bench_short_crate_disambiguator_bug(b: &mut Bencher) {
+        b.iter(|| {
+            // Cover 1 & 2 character disambiguators.
+            // A zero value is impossible because the parsing code adds 1 twice.
+            t!(black_box("_RNvCs0_5basic4main"), "basic[0000000000000002]::main");
+            t!(black_box("_RNvCs1_5basic4main"), "basic[0000000000000003]::main");
+            t!(black_box("_RNvCsd_5basic4main"), "basic[000000000000000f]::main");
+            t!(black_box("_RNvCse_5basic4main"), "basic[0000000000000010]::main");
+            // This is not the canonical format, but it works
+            t!(black_box("_RNvCs0000000000Z_5basic4main"), "basic[000000000000003f]::main");
+            // Cover 15 and 16 character disambiguators
+            t!(black_box("_RNvCs0ZZZZZZZZZZ_5basic4main"), "basic[0ba5ca5392cb0401]::main");
+            t!(black_box("_RNvCs1naolCOL8Qt_5basic4main"), "basic[0fffffffffffffff]::main");
+            t!(black_box("_RNvCs1naolCOL8Qu_5basic4main"), "basic[1000000000000000]::main");
+            t!(black_box("_RNvCslYGhA16ahyd_5basic4main"), "basic[ffffffffffffffff]::main");
+            // Real-world test failure, see rust-lang/rust#160050
+            t!(
+                black_box("_RMse_NvCsiksvdpJ6Jnj_14splat_mangling4mainINtB3_4TypeINtNtCsmKzDxHvwyd_5alloc5boxed3BoxFmwTFuEuaEdEuEE"),
+                "<splat_mangling[d580343ed36ed69b]::main::Type<alloc[04462ec5c505d9a3]::boxed::Box<fn(u32, #[splat] (fn(()), i8), f64)>>>"
+            );
+            t!(
+                black_box("_RMsf_NvCsiksvdpJ6Jnj_14splat_mangling4mainINtB3_4TypeINtNtCsmKzDxHvwyd_5alloc5boxed3BoxFmTFuEuaEdEuEE"),
+                "<splat_mangling[d580343ed36ed69b]::main::Type<alloc[04462ec5c505d9a3]::boxed::Box<fn(u32, (fn(()), i8), f64)>>>"
+            );
+        });
+    }
 }
